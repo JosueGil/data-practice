@@ -8,7 +8,7 @@ library(dplyr)
 library(scales)
 library(ggthemes)
 library(maps)
-t <- read_csv("//Users/josue_gil/Desktop/V/Vaccinations.csv",skip =2)
+t <- read_csv("//Users/josue_gil/Desktop/coding/R/projects/Vaccination-files/Vaccinations.csv",skip =2)
 #The stateselect() function takes a data frame of vaccine data and 
 #selects wanted varaibles, renames variables and removes rows that
 #are not wanted
