@@ -1,2 +1,2 @@
 # data-practice
-Data analysis practice using R and some Python
+Data analysis practice using R
