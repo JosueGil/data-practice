@@ -8,7 +8,10 @@ library(dplyr)
 library(scales)
 library(ggthemes)
 library(maps)
-t <- read_csv("Vaccination-files/Vaccinations.csv",skip =2)
+#defining a function that reads csv files with a specific number.
+read <- function(n){
+  read_csv(paste0("Vaccination-files/Vaccinations",as.character(n),".csv"),skip = 2)
+}
 #The stateselect() function takes a data frame of vaccine data and 
 #selects wanted varaibles, renames variables and removes rows that
 #are not wanted
@@ -34,6 +37,8 @@ addUnits <- function(n) {
   return(labels)
 }
 #We get some warnings during stateselect() that can be ignore so we remove them
+choosingf <- readline(prompt="Enter file: ")
+t <- read(choosingf)
 Vaccines <- suppressWarnings(stateselect(t))
 #Bar graph of Administered Vaccines colored by the % of pop with at least one dose
 barmap <- Vaccines %>% mutate(State = reorder(State, TotalA)) %>% 
@@ -75,5 +80,3 @@ map <- vaccinemap %>% ggplot(aes(x=long,y=lat,fill= P_OneDose)) +
 #Making a dotplot of the percentage of people with one dose
 #Vaccines %>% ggplot(aes(P_OneDose, dotsize = OneDose/sum(OneDose))) + 
   #geom_dotplot(binwidth = 1)
-
-barmap
