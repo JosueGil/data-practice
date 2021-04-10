@@ -32,9 +32,10 @@ stateselect <- function(n){#selecting the wanted variables of the vaccine data
                            'People Fully Vaccinated by State of Residence',
                            'Percent of Total Pop Fully Vaccinated by State of Residence')
   #Renaming the variables to shorter titles 
-  Vaccines<- rename(Vaccines,state = 'State/Territory/Federal Entity',total_d = 'Total Doses Delivered',
+  Vaccines<- rename(Vaccines,state = 'State/Territory/Federal Entity',
+                    total_d = 'Total Doses Delivered',
                     total_a = 'Total Doses Administered by State where Administered', 
-                    total_a_percent = 'Doses Administered per 100k by State where Administered',
+                    total_a_per100k = 'Doses Administered per 100k by State where Administered',
                     one_dose = 'People with at least One Dose by State of Residence', 
                     one_dose_percent ='Percent of Total Pop with at least One Dose by State of Residence',
                     fully_vac = 'People Fully Vaccinated by State of Residence', 
@@ -98,17 +99,26 @@ qqplot <- Vaccines %>% ggplot(aes(sample = one_dose_percent))+ geom_qq()+
 
 ##########################################################
 # The rate per week of Vaccinations since March 25, 2021
+#This function finds the rate of people with at least one dose of a specific file
 Vaccines <- suppressWarnings(stateselect(read(1)))
 rate_finder <- function(n){
-  t <- as.character(n)
-  m <- suppressWarnings(stateselect(read(n))) %>% 
-    select('state','one_dose','population') %>%
-    mutate(rate = one_dose/population) %>% 
-    rename_with(~ sub())
-  
+  m <- suppressWarnings(stateselect(read(n))) %>%
+    mutate(rate = one_dose/population) %>%
+    select('state','one_dose','rate')
+  #colnames(m)[2:3]= paste(colnames(m)[2:3], str_glue("week{n}"),sep = "_")
+  m
 }
+#Obtain a data frame with rates and vaccinations (at least one dose).
 Vaccines <- Vaccines %>% select(state)
-Vaccines <- rate_finder(1)
+for(n in 1:3){
+  m <- rate_finder(n)
+  if (n == 1){Vaccines <- left_join(Vaccines,m, by = "state")}
+  else{Vaccines <- bind_rows(Vaccines,m)}
+}
+
+cali <- Vaccines %>% filter(one_dose < 2000000) %>%
+  ggplot(aes(rate,one_dose, col = state)) + geom_line(show.legend = FALSE)
+cali
 
 
 
