@@ -16,18 +16,32 @@ read <- function(n){
 #selects wanted varaibles, renames variables and removes rows that
 #are not wanted
 stateselect <- function(n){#selecting the wanted variables of the vaccine data
+  #added a dataset of the US population to join with the vaccine dataset
+  url <- "https://en.wikipedia.org/wiki/List_of_states_and_territories_of_the_United_States_by_population"
+  tab <- html_table(html_nodes(read_html(url),"table")[[1]],fill = TRUE) %>% 
+    select('State or territory','Census population') %>%
+    rename(state = 'State or territory', population = 'Census population') %>%
+    filter(!state %in% c('2010')) %>% 
+    mutate(population = as.numeric(str_replace_all(population,",|\\[\\d{1,2}\\]","")))
   #Faster to rename the columns in the CSV file but used dplyr for practice.
-  Vaccines <- n %>% select('State/Territory/Federal Entity', 'Total Doses Delivered','Total Doses Administered by State where Administered',
-                           'Doses Administered per 100k by State where Administered','People with at least One Dose by State of Residence',
-                           'Percent of Total Pop with at least One Dose by State of Residence','People Fully Vaccinated by State of Residence',
+  Vaccines <- n %>% select('State/Territory/Federal Entity', 'Total Doses Delivered',
+                           'Total Doses Administered by State where Administered',
+                           'Doses Administered per 100k by State where Administered',
+                           'People with at least One Dose by State of Residence',
+                           'Percent of Total Pop with at least One Dose by State of Residence',
+                           'People Fully Vaccinated by State of Residence',
                            'Percent of Total Pop Fully Vaccinated by State of Residence')
   #Renaming the variables to shorter titles 
   Vaccines<- rename(Vaccines,state = 'State/Territory/Federal Entity',total_d = 'Total Doses Delivered',
-                    total_a = 'Total Doses Administered by State where Administered', total_a_percent = 'Doses Administered per 100k by State where Administered',
-                    one_dose = 'People with at least One Dose by State of Residence', one_dose_percent ='Percent of Total Pop with at least One Dose by State of Residence',
-                    fully_vac = 'People Fully Vaccinated by State of Residence', fully_vac_percent ='Percent of Total Pop Fully Vaccinated by State of Residence')
-  Vaccines <- Vaccines  %>% mutate(fully_vac_percent = as.numeric(fully_vac_percent),one_dose_percent = as.numeric(one_dose_percent)) %>%
-    filter(!is.na(one_dose_percent), total_a > 80000)
+                    total_a = 'Total Doses Administered by State where Administered', 
+                    total_a_percent = 'Doses Administered per 100k by State where Administered',
+                    one_dose = 'People with at least One Dose by State of Residence', 
+                    one_dose_percent ='Percent of Total Pop with at least One Dose by State of Residence',
+                    fully_vac = 'People Fully Vaccinated by State of Residence', 
+                    fully_vac_percent ='Percent of Total Pop Fully Vaccinated by State of Residence')
+  #adding population to the vaccine dataset, changing class of variables and filtering lower population territories.
+  Vaccines <- Vaccines %>% left_join(tab) %>% mutate(fully_vac_percent = as.numeric(fully_vac_percent),one_dose_percent = as.numeric(one_dose_percent)) %>%
+    filter(!is.na(one_dose_percent), population > 200000)
 }
 #Function that changes units to have K(thousands) or M (millions)
 addUnits <- function(n) {
@@ -37,9 +51,7 @@ addUnits <- function(n) {
   return(labels)
 }
 #We get some warnings during stateselect() that can be ignore so we remove them
-choosingf <- readline(prompt="Enter file: ")
-t <- read(choosingf)
-Vaccines <- suppressWarnings(stateselect(t))
+Vaccines <- suppressWarnings(stateselect(read(readline(prompt="Enter file: "))))
 #Bar graph of Administered Vaccines colored by the % of pop with at least one dose
 barmap <- Vaccines %>% mutate(state = reorder(state, total_a)) %>% 
   ggplot(aes(state,total_a, fill = one_dose_percent)) + geom_col() + 
@@ -64,6 +76,7 @@ usmap <- map_data("state")%>% select(region,long,lat,group)
 statesonly <- Vaccines %>% filter(!state %in% c("Puerto Rico","Indian Health Svc")) %>% 
   rename(region = state) %>% mutate(region = tolower(region))
 vaccinemap <- inner_join(usmap, statesonly,by = "region")
+rm("usmap","statesonly")
 map <- vaccinemap %>% ggplot(aes(x=long,y=lat,fill= one_dose_percent)) + 
   geom_polygon(aes(group = group), color = "black")+coord_fixed(1.3) + theme(
     axis.text = element_blank(),
@@ -79,5 +92,23 @@ map <- vaccinemap %>% ggplot(aes(x=long,y=lat,fill= one_dose_percent)) +
         plot.title = element_text(face = "bold"))
 
 #Added a qqplot of the percentage of one dose
-Vaccines %>% ggplot(aes(sample = one_dose_percent))+ geom_qq()+ geom_qq_line()
+qqplot <- Vaccines %>% ggplot(aes(sample = one_dose_percent))+ geom_qq()+ 
+  geom_qq_line()
+ 
+
+##########################################################
+# The rate per week of Vaccinations since March 25, 2021
+Vaccines <- suppressWarnings(stateselect(read(1)))
+rate_finder <- function(n){
+  t <- as.character(n)
+  m <- suppressWarnings(stateselect(read(n))) %>% 
+    select('state','one_dose','population') %>%
+    mutate(rate = one_dose/population) %>% 
+    rename_with(~ sub())
+  
+}
+Vaccines <- Vaccines %>% select(state)
+Vaccines <- rate_finder(1)
+
+
 
