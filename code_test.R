@@ -8,14 +8,19 @@ tab <- html_table(html_nodes(read_html(url),"table")[[1]],fill = TRUE) %>%
   mutate(population = as.numeric(str_replace_all(population,",|\\[\\d{1,2}\\]","")))
 
 
-test_df <- data.frame(
-  x = 1,
-  y = 2,
-  double_x = 2,
-  double_y = 4)
-
-test_df %>%
-  rename_with(toupper)
-m<- as.character(1)
-test_df %>%
-  rename_with(~ sub("y", paste0("s",n),.x))
+library(tidyverse)
+library(gutenbergr)
+library(tidytext)
+options(digits = 3)
+t <- gutenberg_download(1342)
+stop <- stop_words
+words <- t %>% unnest_tokens(word,text) %>% filter(!word %in% stop$word&
+                                                   !word %in% s) %>%
+  group_by(word) %>% summarize(n())
+i <- words %>% filter 
+s <-words$word[which(str_detect(words$word,"\\d+"))]
+afinn <- get_sentiments("afinn")
+words <- t %>% unnest_tokens(word,text) %>%  filter(!word %in% stop$word&
+                                                      !word %in% s) %>% 
+  filter(word %in% afinn$word) %>% left_join(afinn) %>% select(word,value) %>% 
+  filter(value == 4)
