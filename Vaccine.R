@@ -4,10 +4,11 @@
 #Author: Josue Gil
 
 library(tidyverse)
-library(dplyr)
+library(rvest)
 library(scales)
 library(ggthemes)
 library(maps)
+
 #defining a function that reads csv files with a specific number.
 read <- function(n){
   read_csv(paste0("Vaccination-files/Vaccinations",as.character(n),".csv"),skip = 2)
@@ -41,7 +42,9 @@ stateselect <- function(n){#selecting the wanted variables of the vaccine data
                     fully_vac = 'People Fully Vaccinated by State of Residence', 
                     fully_vac_percent ='Percent of Total Pop Fully Vaccinated by State of Residence')
   #adding population to the vaccine dataset, changing class of variables and filtering lower population territories.
-  Vaccines <- Vaccines %>% left_join(tab) %>% mutate(fully_vac_percent = as.numeric(fully_vac_percent),one_dose_percent = as.numeric(one_dose_percent)) %>%
+  Vaccines <- Vaccines %>% left_join(tab) %>% 
+    mutate(fully_vac_percent = as.numeric(fully_vac_percent),
+           one_dose_percent = as.numeric(one_dose_percent)) %>%
     filter(!is.na(one_dose_percent), population > 200000)
 }
 #Function that changes units to have K(thousands) or M (millions)
@@ -58,8 +61,8 @@ barmap <- Vaccines %>% mutate(state = reorder(state, total_a)) %>%
   ggplot(aes(state,total_a, fill = one_dose_percent)) + geom_col() + 
   scale_y_continuous(name = "Total Administered Vaccines",labels = addUnits)+ 
   theme(axis.text.y = element_text(size = 6.5),legend.title = element_text(size = 8,face = "bold"),
-        plot.caption = element_text(size = 5.5))+
-  coord_flip()+ labs(title = "Total Doses administered in the U.S by State/Territory (March 25, 2021)",
+        plot.caption = element_text(size = 5.5))+ coord_flip()+ 
+  labs(title = "Total Doses administered in the U.S by State/Territory (March 25, 2021)",
        caption = "Data Source: The Center for Disease Control", 
        x = "States/Territory", fill = "% at least one dose") +
   geom_text(aes(label = addUnits(total_a)),size = 2.5, hjust = -0.05)
@@ -78,7 +81,7 @@ statesonly <- Vaccines %>% filter(!state %in% c("Puerto Rico","Indian Health Svc
   rename(region = state) %>% mutate(region = tolower(region))
 vaccinemap <- inner_join(usmap, statesonly,by = "region")
 rm("usmap","statesonly")
-map <- vaccinemap %>% ggplot(aes(x=long,y=lat,fill= one_dose_percent)) + 
+mapv <- vaccinemap %>% ggplot(aes(x=long,y=lat,fill= one_dose_percent)) + 
   geom_polygon(aes(group = group), color = "black")+coord_fixed(1.3) + theme(
     axis.text = element_blank(),
     axis.line = element_blank(),
@@ -115,10 +118,15 @@ for(n in 1:3){
   if (n == 1){Vaccines <- left_join(Vaccines,m, by = "state")}
   else{Vaccines <- bind_rows(Vaccines,m)}
 }
+# Created a visualization for change in proportion of Vaccinated people for each state.
+rate <- Vaccines %>% group_by(state) %>%
+  mutate(rate_change = 100*(max(rate) - min(rate)), mrate = max(rate)) %>% 
+  ungroup() %>% mutate(state = reorder(state,mrate)) 
+rategraph <- rate %>%
+  ggplot(aes(rate,state, col = rate_change)) + 
+  geom_line(show.legend = FALSE) + scale_color_gradient(low="yellow",
+                                                        high="dark red")
 
-cali <- Vaccines %>% filter(one_dose < 2000000) %>%
-  ggplot(aes(rate,one_dose, col = state)) + geom_line(show.legend = FALSE)
-cali
 
 
 
