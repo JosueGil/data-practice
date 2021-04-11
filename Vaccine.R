@@ -118,6 +118,7 @@ for(n in 1:3){
   if (n == 1){Vaccines <- left_join(Vaccines,m, by = "state")}
   else{Vaccines <- bind_rows(Vaccines,m)}
 }
+rm(m)
 # Created a visualization for change in proportion of Vaccinated people for each state.
 rate <- Vaccines %>% group_by(state) %>%
   mutate(rate_change = 100*(max(rate) - min(rate)), mrate = max(rate)) %>% 
@@ -125,8 +126,29 @@ rate <- Vaccines %>% group_by(state) %>%
 rategraph <- rate %>%
   ggplot(aes(rate,state, col = rate_change)) + 
   geom_line(show.legend = FALSE) + scale_color_gradient(low="yellow",
-                                                        high="dark red")
-
-
-
+                                                        high="dark red") +
+  geom_point() +geom_vline(xintercept = 0.85)
+rategraph
+#Vaccine rates per week
+Vaccines <- suppressWarnings(stateselect(read(1))) %>% select(state)
+for (n in 1:2){
+  w1 <- suppressWarnings(stateselect(read(n))) %>%  
+    mutate(rate1 = one_dose/population) %>%
+    select('state','rate1')
+  w2 <- suppressWarnings(stateselect(read(n+1))) %>%  
+    mutate(rate2 = one_dose/population) %>%
+    select('state','rate2') %>% left_join(w1, by = "state") %>% 
+    mutate(ratepw = rate2-rate1)
+  Vaccines <- Vaccines %>% mutate(rate = w2$ratepw)
+  colnames(Vaccines)[n+1]= paste(colnames(Vaccines)[n+1], 
+                                 str_glue("week{n}"),sep = "_")
+}
+rm(w1,w2)
+rate_per_state <- function(s){
+  colnames(Vaccines)[-1] <- as.numeric(str_extract(colnames(Vaccines)[-1], "\\d{1,2}"))
+  Vaccines %>% filter(state == s) %>% pivot_longer(cols = colnames(Vaccines)[-1],
+                                                   names_to = "week") %>% 
+    ggplot(aes(week,value)) + geom_point() + ylim(0,0.2)
+}
+rate_per_state('California')
 
