@@ -24,3 +24,12 @@ words <- t %>% unnest_tokens(word,text) %>%  filter(!word %in% stop$word&
                                                       !word %in% s) %>% 
   filter(word %in% afinn$word) %>% left_join(afinn) %>% select(word,value) %>% 
   filter(value == 4)
+
+
+library(Lahman)
+ 
+t <- Teams %>% filter(yearID %in% 1961:2001) %>% 
+  mutate(run_per_game = X2B/G,AB_per_game = X3B/G) %>% 
+  summarise(r = cor(run_per_game,AB_per_game)) %>% pull(r)
+  
+  
