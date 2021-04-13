@@ -35,7 +35,7 @@ addUnits <- function(n) {
 }
 ```
 
-**Goal:** The goal of this report is to provide informational graphs and charts with data taken from [Center for Disease Control](https://covid.cdc.gov/covid-data-tracker/#vaccinations). Visualizing vaccinations can give us a better look at how close we are at gaining herd immunity and to states safely reopening.
+**Goal:** The goal of this report is to provide informational graphs and charts with data taken from [Center for Disease Control](https://covid.cdc.gov/covid-data-tracker/#vaccinations). Visualizing vaccinations can give us a better look at how close we are at obtaining population immunity. Unfortunately, the threshold for population immunity is not yet known and is an ongoing topic of research. For this reason I want to focus more on the rates of vaccination per state and as a country. There have been a lot of headlines about the millions of doses being administered each day and although the milestones are important they don't give a full picture as to what is happening in the country. That is why the aim of this report is to visualize the impact of the vaccinations on the goal of getting most americans vaccinated.
 
 ### A look at the Total Doses administered
 Here a bar graph is used to represent all states and Puerto Rico to show their total administered vaccines as of March 25, 2021. Although the graph by itself gives a good idea at the current magnitude of the vaccination effort, it fails to provide us with an idea of how close we are to reopening. 
@@ -43,8 +43,7 @@ Here a bar graph is used to represent all states and Puerto Rico to show their t
 For this reason I have added a color coding to graph representing the percentage of people with at least one vaccine for each state. This helps us see that although some states have administered a massive amounts of vaccines they might be more behind in covering their entire population.
 
 ```{r message=FALSE, echo=FALSE}
-t <- read(1)
-Vaccines <- suppressWarnings(stateselect(t))
+Vaccines <- suppressWarnings(stateselect(read(1)))
 Vaccines %>% mutate(state = reorder(state, total_a)) %>% 
   ggplot(aes(state,total_a, fill = one_dose_percent)) + geom_col() + 
   scale_y_continuous(name = "Total Administered Vaccines",labels = addUnits)+ 
