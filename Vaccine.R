@@ -11,7 +11,11 @@ library(maps)
 
 #defining a function that reads csv files with a specific number.
 read <- function(n){
-  read_csv(paste0("Vaccination-files/Vaccinations",as.character(n),".csv"),skip = 2)
+  dates <<- read_csv(paste0("Vaccination-files/Vaccinations",
+                             as.character(n),".csv"),n_max = 1) %>% 
+    str_extract("[A-Z][a-z]*\\s\\d{1,2}\\s2021") %>% mdy()
+  read_csv(paste0("Vaccination-files/Vaccinations",
+                  as.character(n),".csv"),skip = 2)
 }
 #The stateselect() function takes a data frame of vaccine data and 
 #selects wanted varaibles, renames variables and removes rows that
@@ -62,7 +66,7 @@ barmap <- Vaccines %>% mutate(state = reorder(state, total_a)) %>%
   scale_y_continuous(name = "Total Administered Vaccines",labels = addUnits)+ 
   theme(axis.text.y = element_text(size = 6.5),legend.title = element_text(size = 8,face = "bold"),
         plot.caption = element_text(size = 5.5))+ coord_flip()+ 
-  labs(title = "Total Doses administered in the U.S by State/Territory (March 25, 2021)",
+  labs(title = paste0("Total Doses administered in the U.S by State/Territory (",dates,")"),
        caption = "Data Source: The Center for Disease Control", 
        x = "States/Territory", fill = "% at least one dose") +
   geom_text(aes(label = addUnits(total_a)),size = 2.5, hjust = -0.05)
@@ -71,7 +75,8 @@ barmap <- Vaccines %>% mutate(state = reorder(state, total_a)) %>%
 histo <- Vaccines %>% ggplot(aes(one_dose_percent, y =..density..))  +
   geom_histogram(binwidth = 1.5, fill = "#224C98", color = "black")+ 
   geom_density(color = "red") + labs(y = "proportion States/Territory", x = "Percentage",
-                                     title = "Percentage of People with One Dose in the US",
+                                     title = paste0("Percentage of People with One Dose in the US (",
+                                                    dates,")"),
                                      caption = "Data Source: The Center for Disease Control and Prevention")+
   theme(plot.caption = element_text(size = 5.5))
 
@@ -88,7 +93,8 @@ mapv <- vaccinemap %>% ggplot(aes(x=long,y=lat,fill= one_dose_percent)) +
     axis.ticks = element_blank(),
     panel.border = element_blank(),
     panel.grid = element_blank(),
-    axis.title = element_blank()) +  labs(title = "Percentage of Population Vaccinated with at Least One Dose",
+    axis.title = element_blank()) +  labs(title = paste0("Percentage of Population Vaccinated with at Least One Dose (",
+                                                         dates,")"),
                                           caption = "Data Source: The Center for Disease Control and Prevention",
                                           fill = "% Vaccinated")+ 
   theme(legend.title = element_text(size = 8,face = "bold"), 
@@ -150,5 +156,5 @@ rate_per_state <- function(s){
                                                    names_to = "week") %>% 
     ggplot(aes(week,value)) + geom_point() + ylim(0,0.2)
 }
-rate_per_state('California')
+
 
