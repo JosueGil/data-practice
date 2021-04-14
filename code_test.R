@@ -25,11 +25,16 @@ words <- t %>% unnest_tokens(word,text) %>%  filter(!word %in% stop$word&
   filter(word %in% afinn$word) %>% left_join(afinn) %>% select(word,value) %>% 
   filter(value == 4)
 
+library(lubridate)
+read <- function(n){
+  dates <<- read_csv(paste0("Vaccination-files/Vaccinations",
+                       as.character(n),".csv"),n_max = 1) %>% 
+    str_extract("[A-Z][a-z]*\\s\\d{1,2}\\s2021") 
+  read_csv(paste0("Vaccination-files/Vaccinations",
+                  as.character(n),".csv"),skip = 2)
+}
 
-library(Lahman)
- 
-t <- Teams %>% filter(yearID %in% 1961:2001) %>% 
-  mutate(run_per_game = X2B/G,AB_per_game = X3B/G) %>% 
-  summarise(r = cor(run_per_game,AB_per_game)) %>% pull(r)
-  
-  
+read(1)
+d <- mdy(dates)
+month(d)
+
