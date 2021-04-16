@@ -46,22 +46,28 @@ lm(rpg~bbpg + hrpg,data = t)
 lm(rpg~hrpg,data = t)
 
 library(Lahman)
-bat_02 <- Batting %>% filter(yearID == 2002) %>%
-  mutate(pa = AB + BB, singles = (H - X2B - X3B - HR)/pa, bb = BB/pa) %>%
-  filter(pa >= 100) %>%
-  select(playerID, singles, bb)
-bat_03 <- Batting %>% filter(yearID %in% 1999:2001) %>%
-  mutate(pa = AB + BB, singles = (H - X2B - X3B - HR)/pa, bb = BB/pa) %>%
-  filter(pa >= 100) %>%
-  select(playerID, singles, bb) %>% group_by(playerID) %>% 
-  summarise(mean_singles = mean(singles),mean_bb = mean(bb)) %>% 
-  inner_join(bat_02, by = "playerID")
-cor(bat_03$bb,bat_03$mean_bb)
-bat_03 %>% ggplot(aes(mean_singles,singles)) +
-  geom_point()
-bat_03 %>% ggplot(aes(mean_bb,bb)) +
-  geom_point()
-lm(bb~mean_bb,data = bat_03)
+library(tidyverse)
+fit <- Teams %>% 
+  filter(yearID %in% 1961:2001) %>% 
+  mutate(BB = BB/G, HR = HR/G,  R = R/G) %>%  
+  lm(R ~ BB + HR, data = .)
+tidy(fit, conf.int = TRUE)
+
+# regression with BB, singles, doubles, triples, HR
+year_fit <- function(n){
+  fit <- Teams %>% 
+    filter(yearID %in% n)  %>%  
+    lm(R ~ BB + HR, data = .) %>% tidy( conf.int = TRUE)
+  x <<- append(x,fit$estimate[2])
+}
+x <- c()
+invisible(sapply(1961:2018,year_fit))
+t <- tibble(year = 1961:2018, bb = x) 
+t %>% ggplot(aes(year,bb)) + 
+  geom_point() +
+  geom_smooth(method=lm , color="blue", fill="#69b3a2", se=TRUE)
+l <- tidy(lm(t$bb~t$year))
+
 
 
 library(tidyverse)
@@ -79,6 +85,10 @@ galton <- GaltonFamilies %>%
  
 galton %>% group_by(pair) %>% 
   do(tidy(lm(childHeight~parentHeight, data = .),conf.int = TRUE))
-
+library(textreadr)
 #<table id="vaccinations-table" class="expanded-data-table vaccinations-fontsize">
-  
+url <-  "https://covid.cdc.gov/covid-data-tracker/#vaccinations"
+tab <- download.file(url,"Download Data")
+tab
+
+
