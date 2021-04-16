@@ -6,8 +6,8 @@
 library(tidyverse)
 library(rvest)
 library(scales)
-library(ggthemes)
 library(maps)
+library(lubridate)
 
 #defining a function that reads csv files with a specific number.
 read <- function(n){
@@ -46,6 +46,7 @@ stateselect <- function(n){#selecting the wanted variables of the vaccine data
                     fully_vac = 'People Fully Vaccinated by State of Residence', 
                     fully_vac_percent ='Percent of Total Pop Fully Vaccinated by State of Residence')
   #adding population to the vaccine dataset, changing class of variables and filtering lower population territories.
+  Vaccines[43,1] <- "New York"
   Vaccines <- Vaccines %>% left_join(tab) %>% 
     mutate(fully_vac_percent = as.numeric(fully_vac_percent),
            one_dose_percent = as.numeric(one_dose_percent)) %>%
@@ -105,7 +106,7 @@ mapv <- vaccinemap %>% ggplot(aes(x=long,y=lat,fill= one_dose_percent)) +
 qqplot <- Vaccines %>% ggplot(aes(sample = one_dose_percent))+ geom_qq()+ 
   geom_qq_line()
  
-
+stop()
 ##########################################################
 # The rate per week of Vaccinations since March 25, 2021
 #This function finds the rate of people with at least one dose of a specific file
@@ -119,7 +120,7 @@ rate_finder <- function(n){
 }
 #Obtain a data frame with rates and vaccinations (at least one dose).
 Vaccines <- Vaccines %>% select(state)
-for(n in 1:3){
+for(n in 1:4){
   m <- rate_finder(n)
   if (n == 1){Vaccines <- left_join(Vaccines,m, by = "state")}
   else{Vaccines <- bind_rows(Vaccines,m)}
@@ -134,10 +135,10 @@ rategraph <- rate %>%
   geom_line(show.legend = FALSE) + scale_color_gradient(low="yellow",
                                                         high="dark red") +
   geom_point() +geom_vline(xintercept = 0.85)
-rategraph
+#rategraph
 #Vaccine rates per week
 Vaccines <- suppressWarnings(stateselect(read(1))) %>% select(state)
-for (n in 1:2){
+for (n in 1:3){
   w1 <- suppressWarnings(stateselect(read(n))) %>%  
     mutate(rate1 = one_dose/population) %>%
     select('state','rate1')
