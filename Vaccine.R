@@ -106,7 +106,7 @@ mapv <- vaccinemap %>% ggplot(aes(x=long,y=lat,fill= one_dose_percent)) +
 qqplot <- Vaccines %>% ggplot(aes(sample = one_dose_percent))+ geom_qq()+ 
   geom_qq_line()
  
-stop()
+#stop()
 ##########################################################
 # The rate per week of Vaccinations since March 25, 2021
 #This function finds the rate of people with at least one dose of a specific file
@@ -157,5 +157,9 @@ rate_per_state <- function(s){
                                                    names_to = "week") %>% 
     ggplot(aes(week,value)) + geom_point() + ylim(0,0.2)
 }
-
-
+#Vaccination Rate per week in the US
+rate_us <- function(){
+  tibble(rates_per_week = colMeans(Vaccines[-1]), week = 1:3)
+}
+rate_us() %>% ggplot(aes(week,rates_per_week)) +
+  geom_point()+ ylim(0,0.05)
