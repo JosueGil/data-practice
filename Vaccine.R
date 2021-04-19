@@ -49,7 +49,8 @@ stateselect <- function(n){#selecting the wanted variables of the vaccine data
   Vaccines[43,1] <- "New York"
   Vaccines <- Vaccines %>% left_join(tab) %>% 
     mutate(fully_vac_percent = as.numeric(fully_vac_percent),
-           one_dose_percent = as.numeric(one_dose_percent)) %>%
+           one_dose_percent = as.numeric(one_dose_percent),
+           total_a_per100k = as.numeric(total_a_per100k)) %>%
     filter(!is.na(one_dose_percent), population > 200000)
 }
 #Function that changes units to have K(thousands) or M (millions)
@@ -105,12 +106,23 @@ mapv <- vaccinemap %>% ggplot(aes(x=long,y=lat,fill= one_dose_percent)) +
 #Added a qqplot of the percentage of one dose
 qqplot <- Vaccines %>% ggplot(aes(sample = one_dose_percent))+ geom_qq()+ 
   geom_qq_line()
- 
-#stop()
+#Correlation between party alignment and Vaccine rate
+tab1 <- read_csv("RDstate.csv") %>% select(State,pvi) 
+tab1$pvi[which(is.na(tab1$pvi))] <- 0
+colnames(tab1)[1] <- "state"
+Vaccines<- left_join(Vaccines,tab1) %>% filter(!is.na(pvi))
+Vaccines %>% ggplot(aes(pvi,one_dose_percent)) +
+  geom_point()+ geom_smooth(method = lm) 
+cor(Vaccines$pvi,Vaccines$one_dose_percent)
+cor(Vaccines$population,Vaccines$one_dose_percent)
+stop()
+
+
+
 ##########################################################
 # The rate per week of Vaccinations since March 25, 2021
 #This function finds the rate of people with at least one dose of a specific file
-Vaccines <- suppressWarnings(stateselect(read(1)))
+Vaccines <- suppressWarnings(stateselect(read(4)))
 rate_finder <- function(n){
   m <- suppressWarnings(stateselect(read(n))) %>%
     mutate(rate = one_dose/population) %>%
