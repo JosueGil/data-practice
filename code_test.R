@@ -92,3 +92,7 @@ tab <- download.file(url,"Download Data")
 tab
 
 
+library(tidyverse)
+colnames(tab1)[1]
+
+
