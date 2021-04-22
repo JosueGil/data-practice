@@ -43,15 +43,20 @@ stateselect <- function(n){#selecting the wanted variables of the vaccine data
                     total_a_per100k = 'Doses Administered per 100k by State where Administered',
                     one_dose = 'People with at least One Dose by State of Residence', 
                     one_dose_percent ='Percent of Total Pop with at least One Dose by State of Residence',
-                    fully_vac = 'People Fully Vaccinated by State of Residence', 
-                    fully_vac_percent ='Percent of Total Pop Fully Vaccinated by State of Residence')
+                    fully_vaccinated = 'People Fully Vaccinated by State of Residence', 
+                    fully_vaccinated_percent ='Percent of Total Pop Fully Vaccinated by State of Residence')
   #adding population to the vaccine dataset, changing class of variables and filtering lower population territories.
   Vaccines[43,1] <- "New York"
   Vaccines <- Vaccines %>% left_join(tab) %>% 
-    mutate(fully_vac_percent = as.numeric(fully_vac_percent),
+    mutate(fully_vaccinated_percent = as.numeric(fully_vaccinated_percent),
            one_dose_percent = as.numeric(one_dose_percent),
            total_a_per100k = as.numeric(total_a_per100k)) %>%
     filter(!is.na(one_dose_percent), population > 200000)
+  #adding party leanings for each state
+  tab1 <- read_csv("RDstate.csv") %>% select(State,pvi) 
+  tab1$pvi[which(is.na(tab1$pvi))] <- 0
+  colnames(tab1)[1] <- "state"
+  Vaccines<- left_join(Vaccines,tab1)
 }
 #Function that changes units to have K(thousands) or M (millions)
 addUnits <- function(n) {
@@ -63,8 +68,8 @@ addUnits <- function(n) {
 #We get some warnings during stateselect() that can be ignore so we remove them
 Vaccines <- suppressWarnings(stateselect(read(readline(prompt="Enter file: "))))
 #Bar graph of Administered Vaccines colored by the % of pop with at least one dose
-barmap <- function(n){
-  Vaccines %>% mutate(state = reorder(state, total_a)) %>% 
+barmap <- function(){
+  Vaccines %>% mutate(state = reorder(state,total_a)) %>% 
   ggplot(aes(state,total_a, fill = one_dose_percent)) + geom_col() + 
   scale_y_continuous(name = "Total Administered Vaccines",labels = addUnits)+ 
   theme(axis.text.y = element_text(size = 6.5),legend.title = element_text(size = 8,face = "bold"),
@@ -76,22 +81,24 @@ barmap <- function(n){
 }
 #Histogram of the percentages of people with one dose
 histogram <- function(n){
-  Vaccines %>% ggplot(aes(one_dose_percent, y =..density..))  +
+  Vaccines %>% ggplot(aes(.data[[n]], y =..density..))  +
   geom_histogram(binwidth = 1.5, fill = "#224C98", color = "black")+ 
   geom_density(color = "red") + labs(y = "proportion States/Territory", x = "Percentage",
-                                     title = paste0("Percentage of People with One Dose in the US (",
+                                     title = paste0("Percentage of ",
+                                                    str_replace_all(str_remove(n,"percent"),"_"," "),
+                                                    "in the US (",
                                                     dates,")"),
                                      caption = "Data Source: The Center for Disease Control and Prevention")+
   theme(plot.caption = element_text(size = 5.5))
 }
 #Map of the US with percentage
-uamap <- function(n){
+usmap <- function(n){
   usmap <- map_data("state")%>% select(region,long,lat,group)
   statesonly <- Vaccines %>% filter(!state %in% c("Puerto Rico","Indian Health Svc")) %>% 
     rename(region = state) %>% mutate(region = tolower(region))
   vaccinemap <- inner_join(usmap, statesonly,by = "region")
   rm("usmap","statesonly")
-  mapv <- vaccinemap %>% ggplot(aes(x=long,y=lat,fill= one_dose_percent)) + 
+  vaccinemap %>% ggplot(aes(x=long,y=lat,fill= one_dose_percent)) + 
     geom_polygon(aes(group = group), color = "black")+coord_fixed(1.3) + theme(
       axis.text = element_blank(),
       axis.line = element_blank(),
@@ -106,19 +113,10 @@ uamap <- function(n){
         plot.caption = element_text(size = 5.5),
         plot.title = element_text(face = "bold"))
 }
-#Added a qqplot of the percentage of one dose
-qqplot <- Vaccines %>% ggplot(aes(sample = one_dose_percent))+ geom_qq()+ 
-  geom_qq_line()
 #Correlation between party alignment and Vaccine rate
 party_cor <- function(n){
-  tab1 <- read_csv("RDstate.csv") %>% select(State,pvi) 
-  tab1$pvi[which(is.na(tab1$pvi))] <- 0
-  colnames(tab1)[1] <- "state"
-  Vaccines<- left_join(Vaccines,tab1) %>% filter(!is.na(pvi))
-  Vaccines %>% ggplot(aes(pvi,one_dose_percent)) +
+  Vaccines %>% ggplot(aes(pvi,one_dose_percent, size = population)) +
     geom_point()+ geom_smooth(method = lm) 
-  cor(Vaccines$pvi,Vaccines$one_dose_percent)
-  cor(Vaccines$population,Vaccines$one_dose_percent)
 }
 stop()
 
