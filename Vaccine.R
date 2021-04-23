@@ -98,14 +98,16 @@ usmap <- function(n){
     rename(region = state) %>% mutate(region = tolower(region))
   vaccinemap <- inner_join(usmap, statesonly,by = "region")
   rm("usmap","statesonly")
-  vaccinemap %>% ggplot(aes(x=long,y=lat,fill= one_dose_percent)) + 
+  vaccinemap %>% ggplot(aes(x=long,y=lat,fill= .data[[n]])) + 
     geom_polygon(aes(group = group), color = "black")+coord_fixed(1.3) + theme(
       axis.text = element_blank(),
       axis.line = element_blank(),
       axis.ticks = element_blank(),
       panel.border = element_blank(),
       panel.grid = element_blank(),
-      axis.title = element_blank()) +  labs(title = paste0("Percentage of Population Vaccinated with at Least One Dose (",
+      axis.title = element_blank()) +  labs(title = paste0("Percentage of Population ",
+                                                           str_replace_all(str_remove(n,"percent"),"_"," "),
+                                                           "in the U.S. (",
                                                          dates,")"),
                                           caption = "Data Source: The Center for Disease Control and Prevention",
                                           fill = "% Vaccinated")+ 
