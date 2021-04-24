@@ -74,19 +74,19 @@ barmap <- function(){
   scale_y_continuous(name = "Total Administered Vaccines",labels = addUnits)+ 
   theme(axis.text.y = element_text(size = 6.5),legend.title = element_text(size = 8,face = "bold"),
         plot.caption = element_text(size = 5.5))+ coord_flip()+ 
-  labs(title = paste0("Total Doses administered in the U.S by State/Territory (",dates,")"),
+  labs(title = paste0("Total Doses administered in the U.S. by State/Territory (",dates,")"),
        caption = "Data Source: The Center for Disease Control", 
        x = "States/Territory", fill = "% at least one dose") +
   geom_text(aes(label = addUnits(total_a)),size = 2.5, hjust = -0.05)
 }
 #Histogram of the percentages of people with one dose
-histogram <- function(n){
+histogram <- function(n,m){
   Vaccines %>% ggplot(aes(.data[[n]], y =..density..))  +
-  geom_histogram(binwidth = 1.5, fill = "#224C98", color = "black")+ 
+  geom_histogram(binwidth = m, fill = "#224C98", color = "black")+ 
   geom_density(color = "red") + labs(y = "proportion States/Territory", x = "Percentage",
                                      title = paste0("Percentage of ",
                                                     str_replace_all(str_remove(n,"percent"),"_"," "),
-                                                    "in the US (",
+                                                    "in the U.S. (",
                                                     dates,")"),
                                      caption = "Data Source: The Center for Disease Control and Prevention")+
   theme(plot.caption = element_text(size = 5.5))
@@ -105,7 +105,7 @@ usmap <- function(n){
       axis.ticks = element_blank(),
       panel.border = element_blank(),
       panel.grid = element_blank(),
-      axis.title = element_blank()) +  labs(title = paste0("Percentage of Population ",
+      axis.title = element_blank()) +  labs(title = paste0("Percentage of population ",
                                                            str_replace_all(str_remove(n,"percent"),"_"," "),
                                                            "in the U.S. (",
                                                          dates,")"),
@@ -117,8 +117,13 @@ usmap <- function(n){
 }
 #Correlation between party alignment and Vaccine rate
 party_cor <- function(n){
-  Vaccines %>% ggplot(aes(pvi,one_dose_percent, size = population)) +
-    geom_point()+ geom_smooth(method = lm) 
+  Vaccines %>% filter(! is.na(pvi)) %>% 
+    ggplot(aes(pvi,.data[[n]])) +
+    geom_point()+ geom_smooth(method = lm, formula = y ~ x)+
+    labs(title = paste0("Regression of ", 
+                        str_replace_all(str_remove(n,"percent"),"_"," "),
+                        "vs. pvi (",dates,")"),
+         y =str_replace_all(str_remove(n,"percent"),"_"," "))
 }
 stop()
 
