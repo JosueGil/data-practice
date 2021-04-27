@@ -8,8 +8,9 @@ library(rvest)
 library(scales)
 library(maps)
 library(lubridate)
+library(gridExtra)
 
-#defining a function that reads csv files with a specific number.
+#defining a function that reads csv files with a specific number and establishes a date.
 read <- function(n){
   dates <<- read_csv(paste0("Vaccination-files/Vaccinations",
                              as.character(n),".csv"),n_max = 1) %>% 
@@ -18,8 +19,8 @@ read <- function(n){
                   as.character(n),".csv"),skip = 2)
 }
 #The stateselect() function takes a data frame of vaccine data and 
-#selects wanted varaibles, renames variables and removes rows that
-#are not wanted
+#selects wanted columns, renames columns and removes rows that
+#are not wanted, as well as adding columns for pvi, and population
 stateselect <- function(n){#selecting the wanted variables of the vaccine data
   #added a dataset of the US population to join with the vaccine dataset
   url <- "https://en.wikipedia.org/wiki/List_of_states_and_territories_of_the_United_States_by_population"
@@ -66,8 +67,9 @@ addUnits <- function(n) {
   return(labels)
 }
 #We get some warnings during stateselect() that can be ignore so we remove them
+#also asks for the especific file that wants to be viewed
 Vaccines <- suppressWarnings(stateselect(read(readline(prompt="Enter file: "))))
-#Bar graph of Administered Vaccines colored by the % of pop with at least one dose
+#Function that shows the bar graph of Administered Vaccines colored by the % of pop with at least one dose
 barmap <- function(){
   Vaccines %>% mutate(state = reorder(state,total_a)) %>% 
   ggplot(aes(state,total_a, fill = one_dose_percent)) + geom_col() + 
@@ -79,7 +81,8 @@ barmap <- function(){
        x = "States/Territory", fill = "% at least one dose") +
   geom_text(aes(label = addUnits(total_a)),size = 2.5, hjust = -0.05)
 }
-#Histogram of the percentages of people with one dose
+#Function that shows a histogram of the percentages of people with one dose or 
+#the percentage of people fully vaccinated
 histogram <- function(n,m){
   Vaccines %>% ggplot(aes(.data[[n]], y =..density..))  +
   geom_histogram(binwidth = m, fill = "#224C98", color = "black")+ 
@@ -91,7 +94,7 @@ histogram <- function(n,m){
                                      caption = "Data Source: The Center for Disease Control and Prevention")+
   theme(plot.caption = element_text(size = 5.5))
 }
-#Map of the US with percentage
+#Function that shows a map of the US with percentage (fully vaccinated or one dose)
 usmap <- function(n){
   usmap <- map_data("state")%>% select(region,long,lat,group)
   statesonly <- Vaccines %>% filter(!state %in% c("Puerto Rico","Indian Health Svc")) %>% 
@@ -115,7 +118,8 @@ usmap <- function(n){
         plot.caption = element_text(size = 5.5),
         plot.title = element_text(face = "bold"))
 }
-#Correlation between party alignment and Vaccine rate
+#Function showing the graph of the correlation between party alignment 
+#nd Vaccine percentage (fully vaccinated or one dose)
 party_cor <- function(n){
   Vaccines %>% filter(! is.na(pvi)) %>% 
     ggplot(aes(pvi,.data[[n]])) +
