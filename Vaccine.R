@@ -1,6 +1,4 @@
-#Data Analysist of Vaccine data provided by the CDC on March 25, 2021
-#The CSV file contains the number of Doses delivered and administered and all relevant data.
-#It is organized by state/territory/Entity
+#Data Analysis of Vaccine data provided by the CDC for each week after March 25, 2021
 #Author: Josue Gil
 
 library(tidyverse)
