@@ -23,8 +23,8 @@ stateselect <- function(n){#selecting the wanted variables of the vaccine data
   #added a dataset of the US population to join with the vaccine dataset
   url <- "https://en.wikipedia.org/wiki/List_of_states_and_territories_of_the_United_States_by_population"
   tab <- html_table(html_nodes(read_html(url),"table")[[1]],fill = TRUE) %>% 
-    select('State or territory','Census population') %>%
-    rename(state = 'State or territory', population = 'Census population') %>%
+    select('State or territory','Census population[6][a]') %>%
+    rename(state = 'State or territory', population = 'Census population[6][a]') %>%
     filter(!state %in% c('2010')) %>% 
     mutate(population = as.numeric(str_replace_all(population,",|\\[\\d{1,2}\\]","")))
   #Faster to rename the columns in the CSV file but used dplyr for practice.
@@ -82,6 +82,7 @@ barmap <- function(){
 #Function that shows a histogram of the percentages of people with one dose or 
 #the percentage of people fully vaccinated
 histogram <- function(n,m){
+  ifelse(missing(m),m <-  1.5,m <- m)
   Vaccines %>% ggplot(aes(.data[[n]], y =..density..))  +
   geom_histogram(binwidth = m, fill = "#224C98", color = "black")+ 
   geom_density(color = "red") + labs(y = "proportion States/Territory", x = "Percentage",
@@ -116,14 +117,13 @@ usmap <- function(n){
         plot.caption = element_text(size = 5.5),
         plot.title = element_text(face = "bold"))
 }
-#Function showing the graph of the correlation between party alignment 
-#nd Vaccine percentage (fully vaccinated or one dose)
+#Function showing scatterplot between party alignment 
+#and Vaccine percentage (fully vaccinated or one dose) with a regression line
 party_cor <- function(n){
   Vaccines %>% filter(! is.na(pvi)) %>% 
     ggplot(aes(pvi,.data[[n]])) +
     geom_point()+ geom_smooth(method = lm, formula = y ~ x)+
-    labs(title = paste0("Regression of ", 
-                        str_replace_all(str_remove(n,"percent"),"_"," "),
+    labs(title = paste0(str_replace_all(str_remove(n,"percent"),"_"," "),
                         "vs. pvi (",dates,")"),
          y =str_replace_all(str_remove(n,"percent"),"_"," "))
 }
