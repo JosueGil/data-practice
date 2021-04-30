@@ -1,19 +1,59 @@
-library(dslabs)
-library(dplyr)
+library(tidyverse)
+library(rvest)
+library(scales)
+library(maps)
 library(lubridate)
-data(reported_heights)
+library(gridExtra)
 
-dat <- mutate(reported_heights, date_time = ymd_hms(time_stamp)) %>%
-  filter(date_time >= make_date(2016, 01, 25) & date_time < make_date(2016, 02, 1)) %>%
-  mutate(type = ifelse(day(date_time) == 25 & hour(date_time) == 8 & between(minute(date_time), 15, 30), "inclass","online")) %>%
-  select(sex, type)
 
-y <- factor(dat$sex, c("Female", "Male"))
-x <- dat$type
+read <- function(n){
+  dates <<- read_csv(paste0("Vaccination-files/Vaccinations",
+                            as.character(n),".csv"),n_max = 1) %>% 
+    str_extract("[A-Z][a-z]*\\s\\d{1,2}\\s2021") %>% mdy()
+  read_csv(paste0("Vaccination-files/Vaccinations",
+                  as.character(n),".csv"),skip = 2)
+}
 
-dat %>% filter(type == "inclass") %>% 
-  group_by(sex) %>% summarize(n = n()) %>% 
-  mutate(n = n/sum(n))
-  
+stateselect <- function(n){#selecting the wanted variables of the vaccine data
+  #added a dataset of the US population to join with the vaccine dataset
+  url <- "https://en.wikipedia.org/wiki/List_of_states_and_territories_of_the_United_States_by_population"
+  tab <- html_table(html_nodes(read_html(url),"table")[[1]],fill = TRUE) %>% 
+    select('State or territory','Census population[6][a]') %>%
+    rename(state = 'State or territory', population = 'Census population[6][a]') %>%
+    filter(!state %in% c('2010')) %>% 
+    mutate(population = as.numeric(str_replace_all(population,",|\\[\\d{1,2}\\]","")))
+  #Faster to rename the columns in the CSV file but used dplyr for practice.
+  Vaccines <- n %>% select('State/Territory/Federal Entity', 'Total Doses Delivered',
+                           'Total Doses Administered by State where Administered',
+                           'Doses Administered per 100k by State where Administered',
+                           'People with at least One Dose by State of Residence',
+                           'Percent of Total Pop with at least One Dose by State of Residence',
+                           'People Fully Vaccinated by State of Residence',
+                           'Percent of Total Pop Fully Vaccinated by State of Residence')
+  #Renaming the variables to shorter titles 
+  Vaccines<- rename(Vaccines,state = 'State/Territory/Federal Entity',
+                    total_d = 'Total Doses Delivered',
+                    total_a = 'Total Doses Administered by State where Administered', 
+                    total_a_per100k = 'Doses Administered per 100k by State where Administered',
+                    one_dose = 'People with at least One Dose by State of Residence', 
+                    one_dose_percent ='Percent of Total Pop with at least One Dose by State of Residence',
+                    fully_vaccinated = 'People Fully Vaccinated by State of Residence', 
+                    fully_vaccinated_percent ='Percent of Total Pop Fully Vaccinated by State of Residence')
+  #adding population to the vaccine dataset, changing class of variables and filtering lower population territories.
+  Vaccines[43,1] <- "New York"
+  Vaccines <- Vaccines %>% left_join(tab) %>% 
+    mutate(fully_vaccinated_percent = as.numeric(fully_vaccinated_percent),
+           one_dose_percent = as.numeric(one_dose_percent),
+           total_a_per100k = as.numeric(total_a_per100k)) %>%
+    filter(!is.na(one_dose_percent), population > 200000)
+  #adding party leanings for each state
+  tab1 <- read_csv("RDstate.csv") %>% select(State,pvi) 
+  tab1$pvi[which(is.na(tab1$pvi))] <- 0
+  colnames(tab1)[1] <- "state"
+  Vaccines<- left_join(Vaccines,tab1)
+}
+
+#######################################
+library(caTools)
 
                               
