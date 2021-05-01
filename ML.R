@@ -55,5 +55,25 @@ stateselect <- function(n){#selecting the wanted variables of the vaccine data
 
 #######################################
 library(caTools)
+Vaccines <- suppressWarnings(stateselect(read(6))) %>% 
+  filter(!is.na(pvi))
+split <- sample.split(Vaccines$pvi, SplitRatio = 0.8)
+training_set <- subset(Vaccines, split == TRUE)
+test_set <- subset(Vaccines, split == FALSE)
 
+regressor <- lm(one_dose_percent ~ pvi,
+                data = training_set)
+summary(regressor)
+
+pred <- predict(regressor,newdata = test_set)
+ggplot() +
+  geom_point(aes(test_set$pvi,test_set$one_dose_percent),
+             color = "red") +
+  geom_line(aes(training_set$pvi,y = predict(regressor,newdata = training_set)),
+            color = "blue")
+ggplot() +
+  geom_point(aes(training_set$pvi,training_set$one_dose_percent),
+             color = "red") +
+  geom_line(aes(training_set$pvi,y = predict(regressor,newdata = training_set)),
+            color = "blue")
                               
