@@ -135,17 +135,13 @@ stop()
 # The rate per week of Vaccinations since March 25, 2021
 #This function finds the rate of people with at least one dose of a specific file
 Vaccines <- suppressWarnings(stateselect(read(4)))
-rate_finder <- function(n){
+N <- length(list.files("Vaccination-files"))
+#Obtain a data frame with rates and vaccinations (at least one dose).
+Vaccines <- Vaccines %>% select(state)
+for(n in 1:N){
   m <- suppressWarnings(stateselect(read(n))) %>%
     mutate(rate = one_dose/population) %>%
     select('state','one_dose','rate')
-  #colnames(m)[2:3]= paste(colnames(m)[2:3], str_glue("week{n}"),sep = "_")
-  m
-}
-#Obtain a data frame with rates and vaccinations (at least one dose).
-Vaccines <- Vaccines %>% select(state)
-for(n in 1:4){
-  m <- rate_finder(n)
   if (n == 1){Vaccines <- left_join(Vaccines,m, by = "state")}
   else{Vaccines <- bind_rows(Vaccines,m)}
 }
