@@ -30,10 +30,10 @@ stateselect <- function(n){#selecting the wanted variables of the vaccine data
   #added a dataset of the US population to join with the vaccine dataset
   url <- "https://en.wikipedia.org/wiki/List_of_states_and_territories_of_the_United_States_by_population"
   tab <- html_table(html_nodes(read_html(url),"table")[[1]],fill = TRUE) %>% 
-    select('State or territory','Census population') %>%
-    rename(state = 'State or territory', population = 'Census population') %>%
+    select('State or territory','Census population[6][a]') %>%
+    rename(state = 'State or territory', population = 'Census population[6][a]') %>%
     filter(!state %in% c('2010')) %>% 
-    mutate(population = as.numeric(str_replace_all(population,",|\\[\\d{1,2}\\]","")))
+    mutate(population=as.numeric(str_replace_all(population,",|\\[\\d{1,2}\\]","")))
   #Faster to rename the columns in the CSV file but used dplyr for practice.
   Vaccines <- n %>% select('State/Territory/Federal Entity', 'Total Doses Delivered',
                            'Total Doses Administered by State where Administered',
@@ -71,9 +71,7 @@ addUnits <- function(n) {
                           ifelse(n < 1e9, paste0(round(n/1e6), 'M'))))  # in millions
   return(labels)
 }
-#We get some warnings during stateselect() that can be ignore so we remove them
-#also asks for the especific file that wants to be viewed
-Vaccines <- suppressWarnings(stateselect(read(readline(prompt="Enter file: "))))
+
 #Function that shows the bar graph of Administered Vaccines colored by the % of pop with at least one dose
 barmap <- function(){
   Vaccines %>% mutate(state = reorder(state,total_a)) %>% 
@@ -147,12 +145,18 @@ For this reason I have added a color coding to graph representing the percentage
 Vaccines <- suppressWarnings(stateselect(read(1)))
 barmap()
 ```
+\
+  For comparison, here is the graph for the beginning of April followed by the graph of the beginning of May.  
 
-
-
-
-
-```{r pressure, echo=FALSE}
+```{r message=FALSE, echo=FALSE}
+Vaccines <- suppressWarnings(stateselect(read(2)))
+barmap()
+Vaccines <- suppressWarnings(stateselect(read(7)))
+barmap()
 ```
+```{r pressure, echo=FALSE}
+
+```
+
 
 
