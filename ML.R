@@ -76,4 +76,38 @@ ggplot() +
              color = "red") +
   geom_line(aes(training_set$pvi,y = predict(regressor,newdata = training_set)),
             color = "blue")
-                              
+
+#########################################
+#Testing Sensitivity and Specificity in class attendance by sex
+library(dslabs)
+library(dplyr)
+library(lubridate)
+data(reported_heights)
+
+dat <- mutate(reported_heights, date_time = ymd_hms(time_stamp)) %>%
+  filter(date_time >= make_date(2016, 01, 25) & date_time < make_date(2016, 02, 1)) %>%
+  mutate(type = ifelse(day(date_time) == 25 & hour(date_time) == 8 & between(minute(date_time), 15, 30), "inclass","online")) %>%
+  select(sex, type)
+
+y <- factor(dat$sex, c("Female", "Male"))
+x <- dat$type
+
+y_hat <- ifelse(x == "online", "Male", "Female") %>% factor(c("Female", "Male"))
+mean(y == y_hat)
+cm <- table(y_hat,y)
+specificity(data = y_hat,reference = y)
+###########################################
+# using Iris data set to practice 
+library(tidyverse)
+library(caret)
+data(iris)
+iris <- iris[-which(iris$Species=='setosa'),]
+y <- iris$Species
+
+# set.seed(2) # if using R 3.5 or earlier
+set.seed(2, sample.kind="Rounding") # if using R 3.6 or later
+# splitting the data into a training and test set
+test_index <- createDataPartition(y,times=1,p=0.5,list=FALSE)
+test <- iris[test_index,]
+train <- iris[-test_index,]
+
