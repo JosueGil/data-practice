@@ -110,4 +110,79 @@ set.seed(2, sample.kind="Rounding") # if using R 3.6 or later
 test_index <- createDataPartition(y,times=1,p=0.5,list=FALSE)
 test <- iris[test_index,]
 train <- iris[-test_index,]
+#examining the best predictor
+L <- train$Petal.Length # after switching from length, width, sepal and petal we find the best predictor
+cutoff <- seq(min(L), max(L),0.1)
+accuracy <- map_dbl(cutoff, function(x){
+  y_hat <- ifelse(L > x, "virginica", "versicolor")
+  mean(y_hat == train$Species)
+})
+data.frame(cutoff, accuracy) %>% 
+  ggplot(aes(cutoff, accuracy)) + 
+  geom_point() + 
+  geom_line() 
+max(accuracy)
 
+best_cutoff <- cutoff[which.max(accuracy)]
+best_cutoff
+#over trainning leads to less accurate results in the test data
+y_hat <- ifelse(test$Petal.Length > best_cutoff, "virginica", "versicolor")
+mean(y_hat == train$Species)
+#using test instead of train 
+L <- test$Petal.Width
+cutoff <- seq(min(L), max(L),0.1)
+accuracy <- map_dbl(cutoff, function(x){
+  y_hat <- ifelse(L > x, "virginica", "versicolor")
+  mean(y_hat == train$Species)
+})
+data.frame(cutoff, accuracy) %>% 
+  ggplot(aes(cutoff, accuracy)) + 
+  geom_point() + 
+  geom_line() 
+max(accuracy)
+#plot shows a combination of petal length and width might be more useful
+plot(iris,pch=21,bg=iris$Species)
+# Using a combination of petal length and width to predict species
+y_hat <- ifelse(test$Petal.Width > 1.5 & test$Petal.Length > 4.7, "virginica", "versicolor")
+mean(y_hat == train$Species)
+
+###################################
+#Conditional probabilities in a disease experiment
+# set.seed(1) # if using R 3.5 or earlier
+set.seed(1, sample.kind = "Rounding") # if using R 3.6 or later
+disease <- sample(c(0,1), size=1e6, replace=TRUE, prob=c(0.98,0.02))
+test <- rep(NA, 1e6)
+test[disease==0] <- sample(c(0,1), size=sum(disease==0), replace=TRUE, prob=c(0.90,0.10))
+test[disease==1] <- sample(c(0,1), size=sum(disease==1), replace=TRUE, prob=c(0.15, 0.85))
+
+count <- disease-test
+sum(count == 1)/1e6
+x <- sum(disease[which(test == 1)])/length(which(test ==1))
+x/0.02
+#############################################
+#Conditional probabilities in heights dataset
+library(tidyverse)
+library(dslabs)
+data("heights")
+heights %>% 
+  mutate(height = round(height)) %>%
+  group_by(height) %>%
+  summarize(p = mean(sex == "Male")) %>% 
+  qplot(height, p, data =.)
+
+ps <- seq(0, 1, 0.1)
+heights %>% 
+  mutate(g = cut(height, quantile(height, ps), include.lowest = TRUE)) %>%
+  group_by(g) %>%
+  summarize(p = mean(sex == "Male"), height = mean(height)) %>%
+  qplot(height, p, data =.)
+
+Sigma <- 9*matrix(c(1,0.5,0.5,1), 2, 2)
+dat <- MASS::mvrnorm(n = 10000, c(69, 69), Sigma) %>%
+  data.frame() %>% setNames(c("x", "y"))
+
+ps <- seq(0, 1, 0.1)
+dat %>% mutate(g = cut(x, quantile(x, ps), include.lowest = TRUE)) %>%
+  group_by(g) %>%
+  summarize(y = mean(y), x = mean(x)) %>%
+  qplot(x,y,data = .)
