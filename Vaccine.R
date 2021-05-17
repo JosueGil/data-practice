@@ -156,6 +156,7 @@ rategraph <- rate %>%
                                                         high="dark red") +
   geom_point() +geom_vline(xintercept = 0.85)
 #rategraph
+
 #Vaccine rates per week
 Vaccines <- suppressWarnings(stateselect(read(1))) %>% select(state)
 for (n in 1:3){
