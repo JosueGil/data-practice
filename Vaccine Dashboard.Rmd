@@ -218,7 +218,7 @@ renderPlot({
   N <- num()
   Vaccines <- suppressWarnings(stateselect(read(N)))
   Vaccines %>% ggplot(aes(fully_vaccinated_percent, y =..density..))  +
-  geom_histogram(binwidth = 1.5, fill = "#224C98", color = "black")+ 
+  geom_histogram(binwidth = 1.5, fill = "#2f6696", color = "black")+ 
   geom_density(color = "red") + labs(y = "proportion States/Territory", x = "Percentage",
                                      title = paste0("Percentage of ",
                                                     str_replace_all(str_remove("Fully_Vaccinated_percent","percent"),"_"," "),

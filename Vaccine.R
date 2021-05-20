@@ -84,7 +84,7 @@ barmap <- function(){
 histogram <- function(n,m){
   ifelse(missing(m),m <-  1.5,m <- m)
   Vaccines %>% ggplot(aes(.data[[n]], y =..density..))  +
-  geom_histogram(binwidth = m, fill = "#224C98", color = "black")+ 
+  geom_histogram(binwidth = m, fill = "#2f6696", color = "black")+ 
   geom_density(color = "red") + labs(y = "proportion States/Territory", x = "Percentage",
                                      title = paste0("Percentage of ",
                                                     str_replace_all(str_remove(n,"percent"),"_"," "),
