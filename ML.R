@@ -327,3 +327,93 @@ mnist_27$train %>%
   ggplot(aes(x_2, y)) + 
   geom_smooth(method = "loess")
 
+########################################
+#knn practice
+library(dslabs)
+library(tidyverse)
+library(caret)
+data("heights")
+set.seed(1, sample.kind="Rounding") 
+x <- heights$sex
+test_index <- createDataPartition(x,times=1,p=0.5,list=FALSE)
+test <- heights[test_index,]
+train <- heights[-test_index,]
+
+ks <- seq(1,101,3)
+values <- sapply(ks,function(k){
+  fit <- knn3(sex ~., data = train, k=k)
+  
+  y_hat <- predict(fit, test, type = "class")
+  cm_test <- F_meas(data = y_hat, reference = test$sex)
+})
+
+values[which.max(values)]
+ks[which.max(values)]
+
+###################################
+library(dslabs)
+library(caret)
+library(e1071)
+data("tissue_gene_expression")
+set.seed(1, sample.kind="Rounding") 
+y <- tissue_gene_expression$y
+x <- tissue_gene_expression$x
+test_index <- createDataPartition(y,times=1,p=0.5,list=FALSE)
+test <- x[test_index,]
+train <- x[-test_index,]
+rtrain <- y[-test_index]
+rtest <- y[test_index]
+
+ks <- seq(1,11,2)
+
+values <- sapply(ks,function(k){
+  fit <- knn3(train,rtrain, k=k)
+  y_hat <- predict(fit,as_tibble(test), type = "class")
+  print(mean(y_hat == y[test_index]))
+})
+
+fit <- train(x, y, method = "knn", tuneGrid = data.frame(k = seq(1,7,2)))
+fit$results
+ggplot(fit)
+
+###########################################
+#generative models using lda qda naive bayes
+
+library(dslabs)
+library(caret)
+library(tidyverse)
+data("tissue_gene_expression")
+
+# set.seed(1993) #if using R 3.5 or earlier
+set.seed(1993, sample.kind="Rounding") # if using R 3.6 or later
+ind <- which(tissue_gene_expression$y %in% c("cerebellum", "hippocampus"))
+y <- droplevels(tissue_gene_expression$y[ind])
+x <- tissue_gene_expression$x[ind, ]
+x <- x[, sample(ncol(x), 10)]
+#fit using LDA
+fit <- train(x,y,method = "lda")
+fit$results
+#using lda without separating train and test sets for demonstrative purposes
+#Looking at the means in the final model we see two genes drive the model
+means <- fit$finalModel$means
+barchart(t(means))
+#fit using QDA
+fit <-  train(x,y, method = "qda")
+fit$results
+#using same method as before to see the genes that drive the mode;
+means <- fit$finalModel$means
+barchart(t(means))
+
+#Performing LDA again but with scaling
+fit <- train(x,y,method = "lda", preProcess = "center")
+fit$results
+means <- fit$finalModel$means
+barchart(t(means))
+# We use all tissue types to perform LDA 
+set.seed(1993, sample.kind="Rounding") # if using R 3.6 or later
+y <- tissue_gene_expression$y
+x <- tissue_gene_expression$x
+x <- x[, sample(ncol(x), 10)]
+set.seed(1993, sample.kind="Rounding")
+fit <- train(x,y,method = "lda", preProcess = "center")
+fit$results
