@@ -7,6 +7,7 @@ library(scales)
 library(maps)
 library(lubridate)
 library(gridExtra)
+library(ggrepel)
 
 #defining a function that reads csv files with a specific number and establishes a date.
 read <- function(n){
@@ -121,12 +122,30 @@ usmap <- function(n){
 #and Vaccine percentage (fully vaccinated or one dose) with a regression line
 party_cor <- function(n){
   Vaccines %>% filter(! is.na(pvi)) %>% 
-    ggplot(aes(pvi,.data[[n]])) +
-    geom_point()+ geom_smooth(method = lm, formula = y ~ x)+
+    ggplot(aes(pvi,.data[[n]], color = state), size = 1.5) +
+    guides(color = FALSE) +
+    geom_point()+ 
+    geom_smooth(method = lm, formula = y ~ x, color ="blue")+
+    geom_text_repel(aes(label = state, color = state), size = 3) +
     labs(title = paste0(str_replace_all(str_remove(n,"percent"),"_"," "),
                         "vs. pvi (",dates,")"),
          y =str_replace_all(str_remove(n,"percent"),"_"," "))
 }
+
+# progress bar
+Vaccines %>% summarise(totalpop = sum(population), 
+                       fully = sum(fully_vaccinated)/sum(population),
+                       onedose = sum(one_dose)/sum(population)) %>% 
+  pivot_longer(cols = c("fully","onedose"), names_to = "vaccinated") %>% 
+  ggplot(aes(vaccinated, value)) + 
+  geom_col(fill ="#2f6696", width = 0.3) +
+  coord_flip() +
+  geom_text(aes(label = round(value, digits = 3)* 100),hjust = 1.5)+
+  scale_y_continuous(labels = scales::percent, limits = c(0,1)) +
+  labs(y = "percent")
+
+  
+
 stop()
 
 

@@ -17,6 +17,7 @@ library(scales)
 library(maps)
 library(lubridate)
 library(gridExtra)
+library(ggrepel)
 
 #defining a function that reads csv files with a specific number and establishes a date.
 read <- function(n){
@@ -32,10 +33,10 @@ read <- function(n){
 stateselect <- function(n){#selecting the wanted variables of the vaccine data
   #added a dataset of the US population to join with the vaccine dataset
   url <- "https://en.wikipedia.org/wiki/List_of_states_and_territories_of_the_United_States_by_population"
-  tab <- html_table(html_nodes(read_html(url),"table")[[1]],fill = TRUE) %>% 
+  tab <- html_table(html_nodes(read_html(url),"table")[[1]],fill = TRUE) %>%
     dplyr::select('State or territory','Census population[6][a]') %>%
     rename(state = 'State or territory', population = 'Census population[6][a]') %>%
-    filter(!state %in% c('2010')) %>% 
+    filter(!state %in% c('2010')) %>%
     mutate(population = as.numeric(str_replace_all(population,",|\\[\\d{1,2}\\]","")))
   #Faster to rename the columns in the CSV file but used dplyr for practice.
   Vaccines <- n %>% dplyr::select('State/Territory/Federal Entity', 'Total Doses Delivered',
@@ -142,19 +143,13 @@ Inputs {.sidebar}
 ```{r}
 library(shiny)
 selectInput("week", label = h3("Week"), 
-  choices = list("3/25" = 1, "4/1" = 2, "4/8" = 3, "4/15" = 4, "4/22" = 5,"4/29" = 6, "5/6" = 7, "5/13" = 8, "5/20" = 9, "5/27" = 10), 
+  choices = list("3/25" = 1, "4/1" = 2, "4/8" = 3, "4/15" = 4, "4/22" = 5,"4/29" = 6, "5/6" = 7, "5/13" = 8, "5/20" = 9, "5/27" = 10, "6/3" = 11), 
   selected = 1)
 ```
 
-Microarray data matrix for 80 experiments with Saccharomyces Cerevisiae
-organism extracted from R's `biclust` package.
-
-Sebastian Kaiser, Rodrigo Santamaria, Tatsiana Khamiakova, Martin Sill, Roberto
-  Theron, Luis Quintales, Friedrich Leisch and Ewoud De Troyer. (2015). biclust:
-  BiCluster Algorithms. R package version 1.2.0.
-  http://CRAN.R-project.org/package=biclust
+A weekly report of the current progress in Covid-19 vaccinations based on a states percentage of fully vaccinated or those with one dose. Included is the correlation between a states pvi (positive number is right leaning, while negative is left leaning) and their percentage of population vaccinated.
   
-Row {.tabset}
+Row 
 -----------------------------------------------------------------------
 
 ### US map
@@ -200,8 +195,11 @@ renderPlot({
   N <- num()
   Vaccines <- suppressWarnings(stateselect(read(N)))
   Vaccines %>% filter(! is.na(pvi)) %>% 
-    ggplot(aes(pvi,fully_vaccinated_percent)) +
-    geom_point()+ geom_smooth(method = lm, formula = y ~ x)+
+    ggplot(aes(pvi,fully_vaccinated_percent, color = state), size= 2) +
+    guides(color = FALSE)+
+    geom_point()+ 
+    geom_smooth(method = lm, formula = y ~ x, color = "#2f6696")+
+    geom_text_repel(aes(label = state, color = state), size = 3) +
     labs(title = paste0(str_replace_all(str_remove("Fully_Vaccinated_percent","percent"),"_"," "),
                         "vs. pvi (",dates,")"),
          y =str_replace_all(str_remove("Fully_vaccinated_percent","percent"),"_"," "))
@@ -210,22 +208,23 @@ renderPlot({
    
   Row {.tabset}
 -----------------------------------------------------------------------
-### Histogram of percentages
+### Vaccination Progress
 
 ```{r}
 num <- reactive(as.integer(input$week))
 renderPlot({
   N <- num()
   Vaccines <- suppressWarnings(stateselect(read(N)))
-  Vaccines %>% ggplot(aes(fully_vaccinated_percent, y =..density..))  +
-  geom_histogram(binwidth = 1.5, fill = "#2f6696", color = "black")+ 
-  geom_density(color = "red") + labs(y = "proportion States/Territory", x = "Percentage",
-                                     title = paste0("Percentage of ",
-                                                    str_replace_all(str_remove("Fully_Vaccinated_percent","percent"),"_"," "),
-                                                    "in the U.S. (",
-                                                    dates,")"),
-                                     caption = "Data Source: The Center for Disease Control and Prevention")+
-  theme(plot.caption = element_text(size = 5.5))
+  Vaccines %>% summarise(totalpop = sum(population), 
+                       fully = sum(fully_vaccinated)/sum(population),
+                       onedose = sum(one_dose)/sum(population)) %>% 
+  pivot_longer(cols = c("fully","onedose"), names_to ="vaccinated") %>% 
+  ggplot(aes(vaccinated, value)) + 
+  geom_col(fill ="#2f6696", width = 0.3) +
+  coord_flip() +
+  geom_text(aes(label = round(value, digits = 3)* 100),hjust = 1.5)+
+  scale_y_continuous(labels = scales::percent, limits = c(0,1)) +
+  labs(y = "percent")
 })
 ```
 
