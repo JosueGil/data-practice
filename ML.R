@@ -417,3 +417,38 @@ x <- x[, sample(ncol(x), 10)]
 set.seed(1993, sample.kind="Rounding")
 fit <- train(x,y,method = "lda", preProcess = "center")
 fit$results
+
+##################################
+#CARET practice
+library(dslabs)
+library(caret)
+library(tidyverse)
+library(rpart)
+data("tissue_gene_expression")
+# Decision tree
+x <- tissue_gene_expression$x
+y <- tissue_gene_expression$y
+fit <- caret::train(x,y, method = "rpart", 
+             tuneGrid = data.frame(cp = seq(0, 0.1, 0.01)),
+             control = rpart.control(minsplit = 0))
+#plot of accuaracy based on cp
+set.seed(1991, sample.kind="Rounding")
+plot(fit)
+fit$results
+#plot of tree
+plot(fit$finalModel, margin = 0.1)
+text(fit$finalModel, cex = 0.75)
+#Random Forest
+set.seed(1991)
+fit2 <- train(x,y, method = "rf", 
+             tuneGrid = data.frame(mtry =seq(50, 200, 25)),
+             nodesize = 1)
+#plot of accuracy based on mtry
+set.seed(1991)
+plot(fit2)
+
+imp <- varImp(fit2)
+imp
+
+tree_terms <- as.character(unique(fit$finalModel$frame$var[!(fit$finalModel$frame$var == "<leaf>")]))
+tree_terms
